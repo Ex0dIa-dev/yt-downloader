@@ -14,13 +14,8 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
-
-/*
-	1. DOWNLOAD AUDIO AND VIDEO FROM URL(two goroutines)
-	2. FFMPEG .WEBM to MP3
-	3. FFMPEG MERGE MP4 and MP
-*/
 
 func init() {
 	flag.StringVar(&url, "u", "", "insert url")
@@ -50,6 +45,7 @@ func main() {
 		fmt.Println("[+]Downloading...")
 		go DownloadVideo(mp4_url, tmp_video)
 		DownloadAudio(mp3_url, tmp_audio_webm)
+
 		fmt.Println("[+]Download complete.")
 
 		//converting audio.webm to audio.mp3
@@ -67,6 +63,7 @@ func main() {
 		MergeAudioVideo(output, tmp_video, tmp_audio_mp3)
 
 		fmt.Println("[+]Done.")
+
 	case "mp3":
 		_, mp3_url := GetDownloadUrl(url)
 		tmp_audio_webm := "tmp_audio.webm"
@@ -74,6 +71,7 @@ func main() {
 		//downloading audio
 		fmt.Println("[+]Downloading...")
 		DownloadAudio(mp3_url, tmp_audio_webm)
+
 		fmt.Println("[+]Download complete.")
 
 		//converting audio.webm to audio.mp3
@@ -87,6 +85,7 @@ func main() {
 		WebmToMp3(tmp_audio_webm, output)
 
 		fmt.Println("[+]Done.")
+
 	}
 
 }
@@ -154,7 +153,11 @@ func DownloadVideo(url, filename string) {
 	file, err := os.Create(filename)
 	checkerr(err)
 
-	resp, err := http.Get(url)
+	client := http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	resp, err := client.Get(url)
 	if err != nil {
 		file.Close()
 		log.Fatal(err)
@@ -167,6 +170,7 @@ func DownloadVideo(url, filename string) {
 	}
 
 	file.Close()
+
 }
 
 func DownloadAudio(url, filename string) {
@@ -216,26 +220,6 @@ func MergeAudioVideo(output_filename, mp4_path, mp3_path string) {
 	err = os.Remove(mp3_path)
 	checkerr(err)
 }
-
-/* PROGRESS STATUS
-
-type DownloadCounter struct {
-	Total uint64
-}
-
-func (dc *DownloadCounter) Write(p []byte) (int, error) {
-	n := len(p)
-	dc.Total += uint64(n)
-	dc.PrintProgress()
-	return n, nil
-}
-
-func (dc DownloadCounter) PrintProgress() {
-	fmt.Printf("\r%s", strings.Repeat(" ", 35))
-
-	fmt.Printf("\rDownloading... %s complete.", humanize.Bytes(dc.Total))
-}
-*/
 
 func FileExists(filename string) bool {
 
