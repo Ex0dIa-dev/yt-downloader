@@ -15,6 +15,7 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"time"
 )
 
 //flags
@@ -47,8 +48,8 @@ func main() {
 
 		//downloading audio and video
 		fmt.Println("[+]Downloading...")
-		go DownloadVideo(wg, mp4_url, tmp_video)
-		go DownloadAudio(wg, mp3_url, tmp_audio_webm)
+		go DownloadVideo(&wg, mp4_url, tmp_video)
+		go DownloadAudio(&wg, mp3_url, tmp_audio_webm)
 		wg.Wait()
 
 		fmt.Println("[+]Download complete.")
@@ -78,7 +79,7 @@ func main() {
 
 		//downloading audio
 		fmt.Println("[+]Downloading...")
-		DownloadAudio(wg, mp3_url, tmp_audio_webm)
+		DownloadAudio(&wg, mp3_url, tmp_audio_webm)
 		wg.Wait()
 
 		fmt.Println("[+]Download complete.")
@@ -153,10 +154,10 @@ func GetVideoTitle(url string) string {
 	return title
 }
 
-func DownloadVideo(wg sync.WaitGroup, url, filename string) {
+func DownloadVideo(wg *sync.WaitGroup, url, filename string) {
 
 	defer wg.Done()
-
+	fmt.Println("[+]Start Downloading video")
 	if FileExists(filename) {
 		err := os.Remove(filename)
 		checkerr(err)
@@ -165,13 +166,11 @@ func DownloadVideo(wg sync.WaitGroup, url, filename string) {
 	file, err := os.Create(filename)
 	checkerr(err)
 
-	/*
-		client := http.Client{
-			Timeout: 30 * time.Second,
-		}
-	*/
+	client := http.Client{
+		Timeout: 60 * time.Second,
+	}
 
-	resp, err := http.Get(url)
+	resp, err := client.Get(url)
 	if err != nil {
 		file.Close()
 		log.Fatal(err)
@@ -184,12 +183,13 @@ func DownloadVideo(wg sync.WaitGroup, url, filename string) {
 	}
 
 	file.Close()
-
+	fmt.Println("[+]End Downloading video")
 }
 
-func DownloadAudio(wg sync.WaitGroup, url, filename string) {
+func DownloadAudio(wg *sync.WaitGroup, url, filename string) {
 
 	defer wg.Done()
+	fmt.Println("[+]Start Downloading audio")
 
 	if FileExists(filename) {
 		err := os.Remove(filename)
@@ -212,6 +212,7 @@ func DownloadAudio(wg sync.WaitGroup, url, filename string) {
 	}
 
 	file.Close()
+	fmt.Println("[+]End Downloading audio")
 
 }
 
