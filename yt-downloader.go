@@ -15,7 +15,6 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
-	"time"
 )
 
 func init() {
@@ -164,11 +163,13 @@ func DownloadVideo(wg sync.WaitGroup, url, filename string) {
 	file, err := os.Create(filename)
 	checkerr(err)
 
-	client := http.Client{
-		Timeout: 30 * time.Second,
-	}
+	/*
+		client := http.Client{
+			Timeout: 30 * time.Second,
+		}
+	*/
 
-	resp, err := client.Get(url)
+	resp, err := http.Get(url)
 	if err != nil {
 		file.Close()
 		log.Fatal(err)
