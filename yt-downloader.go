@@ -14,9 +14,11 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 )
 
+//flags
 func init() {
 	flag.StringVar(&url, "u", "", "insert url")
 	flag.StringVar(&format, "f", "mp3", "mp4 or mp3")
@@ -41,10 +43,14 @@ func main() {
 		tmp_audio_webm := "tmp_audio.webm"
 		tmp_video := "tmp_video.mp4"
 
+		var wg sync.WaitGroup
+		wg.Add(2)
+
 		//downloading audio and video
 		fmt.Println("[+]Downloading...")
-		go DownloadVideo(mp4_url, tmp_video)
-		DownloadAudio(mp3_url, tmp_audio_webm)
+		go DownloadVideo(&wg, mp4_url, tmp_video)
+		go DownloadAudio(&wg, mp3_url, tmp_audio_webm)
+		wg.Wait()
 
 		fmt.Println("[+]Download complete.")
 
@@ -68,9 +74,13 @@ func main() {
 		_, mp3_url := GetDownloadUrl(url)
 		tmp_audio_webm := "tmp_audio.webm"
 
+		var wg sync.WaitGroup
+		wg.Add(1)
+
 		//downloading audio
 		fmt.Println("[+]Downloading...")
-		DownloadAudio(mp3_url, tmp_audio_webm)
+		DownloadAudio(&wg, mp3_url, tmp_audio_webm)
+		wg.Wait()
 
 		fmt.Println("[+]Download complete.")
 
@@ -130,6 +140,7 @@ func GetDownloadUrl(url string) (string, string) {
 	return mp4_url, mp3_url
 }
 
+//Get video title from youtube-dl
 func GetVideoTitle(url string) string {
 
 	out, err := exec.Command("youtube-dl", "-e", url).Output()
@@ -143,8 +154,10 @@ func GetVideoTitle(url string) string {
 	return title
 }
 
-func DownloadVideo(url, filename string) {
+func DownloadVideo(wg *sync.WaitGroup, url, filename string) {
 
+	defer wg.Done()
+	fmt.Println("[+]Start Downloading video")
 	if FileExists(filename) {
 		err := os.Remove(filename)
 		checkerr(err)
@@ -154,7 +167,7 @@ func DownloadVideo(url, filename string) {
 	checkerr(err)
 
 	client := http.Client{
-		Timeout: 30 * time.Second,
+		Timeout: 60 * time.Second,
 	}
 
 	resp, err := client.Get(url)
@@ -170,10 +183,13 @@ func DownloadVideo(url, filename string) {
 	}
 
 	file.Close()
-
+	fmt.Println("[+]End Downloading video")
 }
 
-func DownloadAudio(url, filename string) {
+func DownloadAudio(wg *sync.WaitGroup, url, filename string) {
+
+	defer wg.Done()
+	fmt.Println("[+]Start Downloading audio")
 
 	if FileExists(filename) {
 		err := os.Remove(filename)
@@ -196,9 +212,11 @@ func DownloadAudio(url, filename string) {
 	}
 
 	file.Close()
+	fmt.Println("[+]End Downloading audio")
 
 }
 
+//Converting tmp_audio.webm to mp3
 func WebmToMp3(in_filename, out_filename string) {
 
 	cmd := exec.Command("ffmpeg", "-i", in_filename, "-vn", "-ab", "128k", "-ar", "44100", "-y", out_filename)
@@ -209,6 +227,7 @@ func WebmToMp3(in_filename, out_filename string) {
 	checkerr(err)
 }
 
+//Merging Mp3 audio and Mp4 video
 func MergeAudioVideo(output_filename, mp4_path, mp3_path string) {
 
 	cmd := exec.Command("ffmpeg", "-i", mp4_path, "-i", mp3_path, "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "copy", "-y", output_filename)
