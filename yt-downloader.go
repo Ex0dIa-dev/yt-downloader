@@ -46,13 +46,10 @@ func main() {
 		var wg sync.WaitGroup
 		wg.Add(2)
 
-		//downloading audio and video
-		fmt.Println("[+]Downloading...")
+		//downloading audio and vide
 		go DownloadVideo(&wg, mp4_url, tmp_video)
 		go DownloadAudio(&wg, mp3_url, tmp_audio_webm)
 		wg.Wait()
-
-		fmt.Println("[+]Download complete.")
 
 		//converting audio.webm to audio.mp3
 		fmt.Println("[+]Processing file...")
@@ -96,6 +93,45 @@ func main() {
 
 		fmt.Println("[+]Done.")
 
+	case "wav":
+		_, mp3_url := GetDownloadUrl(url)
+		tmp_audio_webm := "tmp_audio.webm"
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+
+		//downloading audio
+		DownloadAudio(&wg, mp3_url, tmp_audio_webm)
+		wg.Wait()
+
+		//converting audio.webm to audio.mp3
+		fmt.Println("[+]Processing file...")
+
+		if output == "" {
+			output = GetVideoTitle(url)
+			output = output + ".wav"
+		}
+
+		WebmToWav(tmp_audio_webm, output)
+
+		fmt.Println("[+]Done.")
+
+	case "webm":
+		_, mp3_url := GetDownloadUrl(url)
+
+		if output == "" {
+			output = GetVideoTitle(url)
+			output = output + ".webm"
+		}
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+
+		//downloading audio
+		DownloadAudio(&wg, mp3_url, output)
+		wg.Wait()
+
+		fmt.Println("[+]Done.")
 	}
 
 }
@@ -157,7 +193,7 @@ func GetVideoTitle(url string) string {
 func DownloadVideo(wg *sync.WaitGroup, url, filename string) {
 
 	defer wg.Done()
-	fmt.Println("[+]Start Downloading video")
+	fmt.Println("[+]Start Downloading Video.")
 	if FileExists(filename) {
 		err := os.Remove(filename)
 		checkerr(err)
@@ -183,13 +219,13 @@ func DownloadVideo(wg *sync.WaitGroup, url, filename string) {
 	}
 
 	file.Close()
-	fmt.Println("[+]End Downloading video")
+	fmt.Println("[+]End Downloading Video.")
 }
 
 func DownloadAudio(wg *sync.WaitGroup, url, filename string) {
 
 	defer wg.Done()
-	fmt.Println("[+]Start Downloading audio")
+	fmt.Println("[+]Start Downloading Audio.")
 
 	if FileExists(filename) {
 		err := os.Remove(filename)
@@ -212,7 +248,7 @@ func DownloadAudio(wg *sync.WaitGroup, url, filename string) {
 	}
 
 	file.Close()
-	fmt.Println("[+]End Downloading audio")
+	fmt.Println("[+]End Downloading Audio.")
 
 }
 
@@ -220,6 +256,16 @@ func DownloadAudio(wg *sync.WaitGroup, url, filename string) {
 func WebmToMp3(in_filename, out_filename string) {
 
 	cmd := exec.Command("ffmpeg", "-i", in_filename, "-vn", "-ab", "128k", "-ar", "44100", "-y", out_filename)
+	err := cmd.Run()
+	checkerr(err)
+
+	err = os.Remove(in_filename)
+	checkerr(err)
+}
+
+func WebmToWav(in_filename, out_filename string) {
+
+	cmd := exec.Command("ffmpeg", "-i", in_filename, "-c:a", "pcm_f32le", out_filename)
 	err := cmd.Run()
 	checkerr(err)
 

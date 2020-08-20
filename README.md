@@ -56,6 +56,13 @@ go build yt-downloader.go
 **Flag:**
 
 - **'-u'** ---> define youtube video url
-- **'-f'** ---> define file format("mp3" or "mp4"; default: mp3)
+- **'-f'** ---> define file format(default: mp3)
 - **'-o'** ---> define output filename(ex. 'song.mp3' or 'video.mp4')
+
+**Format:**
+
+- MP4
+- MP3
+- WAV
+- WEBM
 
