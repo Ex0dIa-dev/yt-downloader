@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -41,10 +42,14 @@ func main() {
 		tmp_audio_webm := "tmp_audio.webm"
 		tmp_video := "tmp_video.mp4"
 
+		var wg sync.WaitGroup
+		wg.Add(2)
+
 		//downloading audio and video
 		fmt.Println("[+]Downloading...")
-		go DownloadVideo(mp4_url, tmp_video)
-		DownloadAudio(mp3_url, tmp_audio_webm)
+		go DownloadVideo(wg, mp4_url, tmp_video)
+		go DownloadAudio(wg, mp3_url, tmp_audio_webm)
+		wg.Wait()
 
 		fmt.Println("[+]Download complete.")
 
@@ -68,9 +73,13 @@ func main() {
 		_, mp3_url := GetDownloadUrl(url)
 		tmp_audio_webm := "tmp_audio.webm"
 
+		var wg sync.WaitGroup
+		wg.Add(1)
+
 		//downloading audio
 		fmt.Println("[+]Downloading...")
-		DownloadAudio(mp3_url, tmp_audio_webm)
+		DownloadAudio(wg, mp3_url, tmp_audio_webm)
+		wg.Wait()
 
 		fmt.Println("[+]Download complete.")
 
@@ -143,7 +152,9 @@ func GetVideoTitle(url string) string {
 	return title
 }
 
-func DownloadVideo(url, filename string) {
+func DownloadVideo(wg sync.WaitGroup, url, filename string) {
+
+	defer wg.Done()
 
 	if FileExists(filename) {
 		err := os.Remove(filename)
@@ -173,7 +184,9 @@ func DownloadVideo(url, filename string) {
 
 }
 
-func DownloadAudio(url, filename string) {
+func DownloadAudio(wg sync.WaitGroup, url, filename string) {
+
+	defer wg.Done()
 
 	if FileExists(filename) {
 		err := os.Remove(filename)
