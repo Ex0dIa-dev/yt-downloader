@@ -17,6 +17,7 @@ import (
 	"sync"
 )
 
+//flags
 func init() {
 	flag.StringVar(&url, "u", "", "insert url")
 	flag.StringVar(&format, "f", "mp3", "mp4 or mp3")
@@ -138,6 +139,7 @@ func GetDownloadUrl(url string) (string, string) {
 	return mp4_url, mp3_url
 }
 
+//Get video title from youtube-dl
 func GetVideoTitle(url string) string {
 
 	out, err := exec.Command("youtube-dl", "-e", url).Output()
@@ -213,6 +215,7 @@ func DownloadAudio(wg sync.WaitGroup, url, filename string) {
 
 }
 
+//Converting tmp_audio.webm to mp3
 func WebmToMp3(in_filename, out_filename string) {
 
 	cmd := exec.Command("ffmpeg", "-i", in_filename, "-vn", "-ab", "128k", "-ar", "44100", "-y", out_filename)
@@ -223,6 +226,7 @@ func WebmToMp3(in_filename, out_filename string) {
 	checkerr(err)
 }
 
+//Merging Mp3 audio and Mp4 video
 func MergeAudioVideo(output_filename, mp4_path, mp3_path string) {
 
 	cmd := exec.Command("ffmpeg", "-i", mp4_path, "-i", mp3_path, "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "copy", "-y", output_filename)
