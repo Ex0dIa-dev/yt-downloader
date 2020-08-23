@@ -153,12 +153,11 @@ func main() {
 		WebmToMp3(tmp_audio_webm, tmp_audio_mp3)
 
 		//merging mp4 and mp3
-
 		MergeAudioVideo("video_audio.mp4", tmp_video, tmp_audio_mp3)
 
 		if output == "" {
 			output = GetVideoTitle(url)
-			output = output + ".mp4"
+			output = output + ".mkv"
 		}
 
 		MP4toMKV("video_audio.mp4", output)
@@ -287,7 +286,7 @@ func DownloadAudio(wg *sync.WaitGroup, url, filename string) {
 //Converting MP4(with Mp3 audio) to MKV
 func MP4toMKV(in_filename, out_filename string) {
 
-	cmd := exec.Command("ffmpeg", "-o", in_filename, "-vcodec", "copy", "-acodec", "copy", out_filename)
+	cmd := exec.Command("ffmpeg", "-i", in_filename, "-vcodec", "copy", "-acodec", "copy", out_filename)
 	err := cmd.Run()
 	checkerr(err)
 
@@ -319,6 +318,13 @@ func WebmToWav(in_filename, out_filename string) {
 
 //Merging Mp3 audio and Mp4 video
 func MergeAudioVideo(output_filename, mp4_path, mp3_path string) {
+
+	if output_filename == "video_audio.mp4" {
+		if FileExists(output_filename) {
+			err := os.Remove(output_filename)
+			checkerr(err)
+		}
+	}
 
 	cmd := exec.Command("ffmpeg", "-i", mp4_path, "-i", mp3_path, "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "copy", "-y", output_filename)
 	err := cmd.Run()
