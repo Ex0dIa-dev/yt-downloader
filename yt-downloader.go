@@ -132,6 +132,38 @@ func main() {
 		wg.Wait()
 
 		fmt.Println("[+]Done.")
+
+	case "mkv":
+		//getting direct url from youtube-dl
+		mp4_url, mp3_url := GetDownloadUrl(url)
+		tmp_audio_webm := "tmp_audio.webm"
+		tmp_video := "tmp_video.mp4"
+
+		var wg sync.WaitGroup
+		wg.Add(2)
+
+		//downloading audio and vide
+		go DownloadVideo(&wg, mp4_url, tmp_video)
+		go DownloadAudio(&wg, mp3_url, tmp_audio_webm)
+		wg.Wait()
+
+		//converting audio.webm to audio.mp3
+		fmt.Println("[+]Processing file...")
+		tmp_audio_mp3 := "tmp_audio.mp3"
+		WebmToMp3(tmp_audio_webm, tmp_audio_mp3)
+
+		//merging mp4 and mp3
+
+		MergeAudioVideo("video_audio.mp4", tmp_video, tmp_audio_mp3)
+
+		if output == "" {
+			output = GetVideoTitle(url)
+			output = output + ".mp4"
+		}
+
+		MP4toMKV("video_audio.mp4", output)
+
+		fmt.Println("[+]Done.")
 	}
 
 }
@@ -249,6 +281,18 @@ func DownloadAudio(wg *sync.WaitGroup, url, filename string) {
 
 	file.Close()
 	fmt.Println("[+]End Downloading Audio.")
+
+}
+
+//Converting MP4(with Mp3 audio) to MKV
+func MP4toMKV(in_filename, out_filename string) {
+
+	cmd := exec.Command("ffmpeg", "-o", in_filename, "-vcodec", "copy", "-acodec", "copy", out_filename)
+	err := cmd.Run()
+	checkerr(err)
+
+	err = os.Remove(in_filename)
+	checkerr(err)
 
 }
 
